@@ -669,6 +669,7 @@ DEFINE_TO(at::Tensor, toTensor)
 DEFINE_TO(c10::Stream, toStream)
 DEFINE_TO(float, toDouble)
 DEFINE_TO(double, toDouble)
+DEFINE_TO(c10::complex<double>, toComplexDouble)
 DEFINE_TO(unsigned char, toInt)
 DEFINE_TO(signed char, toInt)
 DEFINE_TO(unsigned short, toInt)
@@ -685,6 +686,7 @@ DEFINE_TO(c10::intrusive_ptr<ivalue::Object>, toObject)
 DEFINE_TO(at::Scalar, toScalar)
 DEFINE_TO(c10::List<int64_t>, toIntList)
 DEFINE_TO(c10::List<double>, toDoubleList)
+DEFINE_TO(c10::List<c10::complex<double>>, toComplexDoubleList)
 DEFINE_TO(c10::List<bool>, toBoolList)
 DEFINE_TO(c10::List<at::Tensor>, toTensorList)
 DEFINE_TO(c10::impl::GenericList, toList)
@@ -910,6 +912,18 @@ inline std::vector<double> IValue::toDoubleVector() const {
   AT_ASSERT(isDoubleList(), "Expected DoubleList but got ", tagKind());
   return createVectorFromList<double>(
       static_cast<const c10::detail::ListImpl*>(payload.as_intrusive_ptr));
+}
+inline c10::List<c10::complex<double>> IValue::toComplexDoubleList() && {
+  AT_ASSERT(isDoubleList(), "Expected ComplexDoubleList but got ", tagKind());
+  return c10::List<c10::complex<double>>(moveToIntrusivePtr<c10::detail::ListImpl>());
+}
+inline c10::List<c10::complex<double>> IValue::toComplexDoubleList() const & {
+  AT_ASSERT(isComplexDoubleList(), "Expected ComplexDoubleList but got ", tagKind());
+  return c10::List<c10::complex<double>>(toIntrusivePtr<c10::detail::ListImpl>());
+}
+inline std::vector<c10::complex<double>> IValue::toComplexDoubleVector() const {
+  AT_ASSERT(isComplexDoubleList(), "Expected ComplexDoubleList but got ", tagKind());
+  return createVectorFromList<c10::complex<double>>(static_cast<const c10::detail::ListImpl*>(payload.as_intrusive_ptr));
 }
 inline c10::List<bool> IValue::toBoolList() && {
   AT_ASSERT(isBoolList(), "Expected BoolList but got ", tagKind());
@@ -1180,6 +1194,8 @@ inline bool IValue::isSameIdentity(const IValue& rhs) const {
     return this->toInt() == rhs.toInt();
   } else if (this->isDouble() && rhs.isDouble()) {
     return this->toDouble() == rhs.toDouble();
+  } else if (this->isComplexDouble() && rhs.isComplexDouble()) {
+    return this->toComplexDouble() == rhs.toComplexDouble();
   } else if (this->isString() && rhs.isString()) {
     return this->toStringRef() == rhs.toStringRef();
   } else {
