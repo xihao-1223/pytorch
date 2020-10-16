@@ -74,7 +74,10 @@ class VISIBILITY_HIDDEN ConcreteModuleTypeBuilder {
       const TypePtr& type,
       py::object pyFunction);
 
-  void addModule(std::string name, std::shared_ptr<ConcreteModuleType> meta);
+  void addModule(
+      std::string name,
+      std::shared_ptr<ConcreteModuleType> meta,
+      TypePtr hint = nullptr);
 
   void addOverload(
       std::string methodName,
@@ -83,6 +86,8 @@ class VISIBILITY_HIDDEN ConcreteModuleTypeBuilder {
   void addFailedAttribute(std::string name, std::string failureReason);
   void addIgnoredAttribute(std::string name);
   void setIterableModuleKind(IterableModuleKind kind);
+  // Set a type hint on this Module (perhaps an InterfaceType).
+  void setContainedTypeHint(TypePtr containedTypeHint);
 
   // If a ConcreteModuleType is poisoned, it will never compare equal to any
   // other concrete type
@@ -124,13 +129,22 @@ class VISIBILITY_HIDDEN ConcreteModuleTypeBuilder {
   };
 
   struct ModuleInfo {
-    ModuleInfo(std::string name, std::shared_ptr<ConcreteModuleType> meta)
-        : name_(std::move(name)), meta_(std::move(meta)) {}
+    ModuleInfo(
+        std::string name,
+        std::shared_ptr<ConcreteModuleType> meta,
+        TypePtr containedTypeHint = nullptr)
+        : name_(std::move(name)),
+          meta_(std::move(meta)),
+          containedTypeHint_(containedTypeHint) {}
 
     friend bool operator==(const ModuleInfo& lhs, const ModuleInfo& rhs);
 
     std::string name_;
     std::shared_ptr<ConcreteModuleType> meta_;
+    // A type hint for this submodule (most likely an InterfaceType or some
+    // related type). This can be used to unlock additional operations like
+    // indexing without a static key.
+    TypePtr containedTypeHint_;
   };
 
  private:
@@ -172,6 +186,11 @@ class VISIBILITY_HIDDEN ConcreteModuleTypeBuilder {
   // The original `nn.Module` class that we derived this ScriptModule from.
   py::object pyClass_;
 
+  // A type hint for this Module (most likely an InterfaceType or some related
+  // type). This can be used to unlock additional operations like indexing
+  // without a static key.
+  TypePtr containedTypeHint_{nullptr};
+
   // NOTE: If you ever add any more state to this struct, you need to make sure
   // operator== still makes sense!
   friend ConcreteModuleType;
@@ -185,6 +204,7 @@ class VISIBILITY_HIDDEN ConcreteModuleType {
 
   static std::shared_ptr<ConcreteModuleType> fromJitType(TypePtr type);
 
+  TypePtr getContainedTypeHint() const;
   TypePtr getJitType() const;
   c10::optional<py::object> getPyClass() const;
   IterableModuleKind getIterableModuleKind() const;
@@ -194,6 +214,7 @@ class VISIBILITY_HIDDEN ConcreteModuleType {
   c10::optional<c10::Symbol> findBuiltinFunction(const std::string& name) const;
   std::shared_ptr<ConcreteModuleType> findSubmoduleConcreteType(
       const std::string& name) const;
+  TypePtr findSubmoduleContainedTypeHint(const std::string& name) const;
   c10::optional<std::string> findFailedAttribute(const std::string& name) const;
   bool isIgnoredAttribute(const std::string& name) const;
 
