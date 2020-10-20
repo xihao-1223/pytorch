@@ -5685,7 +5685,6 @@ class TestNN(NNTestCase):
         self.assertEqual(tuple(result.shape), tuple(ref_output.shape))
         torch.testing.assert_allclose(result, ref_output)
 
-
     @unittest.skipIf(not (TEST_CUDNN and TEST_MULTIGPU), 'CUDNN or multi-gpu not available')
     def test_cudnn_rnn_dropout_states_device(self):
         rnn = nn.RNN(10, 20, num_layers=2, dropout=.5)
@@ -13126,7 +13125,7 @@ class TestLazyModules(TestCase):
         new_module = LazyModule()
         new_module.register_parameter('test_param', nn.Parameter(torch.ones(5, 5)))
         module.load_state_dict(new_module.state_dict())
-        self.assertEqual(module.test_param, torch.ones((5, 5))) 
+        self.assertEqual(module.test_param, torch.ones((5, 5)))
 
         # Uninitialized parameters are left unchanged
         module = LazyModule()
@@ -13185,9 +13184,9 @@ class TestLazyModules(TestCase):
     def test_linear_state(self):
         module = nn.Linear(5, 10)
         lazy_module = nn.LazyLinear(10)
-        lazy_module.load_state_dict(module.state_dict()) 
+        lazy_module.load_state_dict(module.state_dict())
         # Parameters have been initialized but the module won't become a full
-        # Linear one until the first iteration. This is due to 
+        # Linear one until the first iteration. This is due to
         # limitations on the state_dict loading logic
         self.assertFalse(lazy_module.has_uninitialized_params())
         self.assertTrue(lazy_module.weight.shape == (10, 5))
@@ -13195,7 +13194,7 @@ class TestLazyModules(TestCase):
         module = nn.Linear(5, 10)
         lazy_module = nn.LazyLinear(10)
         with self.assertRaisesRegex(RuntimeError, 'shape of an uninitialized'):
-            module.load_state_dict(lazy_module.state_dict()) 
+            module.load_state_dict(lazy_module.state_dict())
 
     @suppress_warnings
     def test_materialize_dtype(self):

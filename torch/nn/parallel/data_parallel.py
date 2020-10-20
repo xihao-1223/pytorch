@@ -148,6 +148,16 @@ class DataParallel(Module):
         if not self.device_ids:
             return self.module(*inputs, **kwargs)
 
+        # DataParallel needs at least one input in forward function
+        # Note:
+        # The forward function's input can be either in 'inputs' list or in 'kwargs' dict.
+        # If 'inputs' list is empty and 'kwargs' dict has item, we have no way to identify
+        # whether 'kwargs' has an input for forward function, so we just check whether `kwargs`
+        # dict has item. Caller needs to make sure 'kwargs' dict has at least an input for
+        # forward function in this case.
+        if len(inputs) == 0 and len(kwargs) == 0:
+            raise RuntimeError("Forward function must have at least one input, bot got zero")
+
         for t in chain(self.module.parameters(), self.module.buffers()):
             if t.device != self.src_device_obj:
                 raise RuntimeError("module must have its parameters and buffers "
